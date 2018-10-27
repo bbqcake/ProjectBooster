@@ -4,13 +4,15 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 
 public class Rocket : MonoBehaviour {
-
-	// TODO fix lighting big
+	
 	[SerializeField] float rcsThrust = 125f;
 	[SerializeField] float mainThrust = 100f;
-	[SerializeField] AudioClip MainEngineSFX;
+	[SerializeField] float levelLoadDelay = 2f;	[SerializeField] AudioClip MainEngineSFX;
 	[SerializeField] AudioClip DeathSFX;
 	[SerializeField] AudioClip SuccessSFX;
+	[SerializeField] ParticleSystem EngineParticle;
+	[SerializeField] ParticleSystem SuccessParticle;
+	[SerializeField] ParticleSystem DeathParticle;
 
 
 	Rigidbody rigidBody;
@@ -23,8 +25,7 @@ public class Rocket : MonoBehaviour {
 	void Start () 
 	{
 		rigidBody = GetComponent<Rigidbody>();
-		audioSource = GetComponent<AudioSource>();		
-		
+		audioSource = GetComponent<AudioSource>();				
 	}
 	
 	// Update is called once per frame
@@ -89,16 +90,18 @@ public class Rocket : MonoBehaviour {
 	 {
 		state = State.Transcending;	
 		audioSource.Stop();
-		audioSource.PlayOneShot(SuccessSFX);			
-		Invoke("LoadNextLevel", 1f); // load after one second
+		audioSource.PlayOneShot(SuccessSFX);
+		SuccessParticle.Play();			
+		Invoke("LoadNextLevel", levelLoadDelay); // load after one second
 	 }
 
 	 private void StartDeathSequence()
 	 {
 		state = State.Dying;
 		audioSource.Stop();
-		audioSource.PlayOneShot(DeathSFX);			
-		Invoke("LoadFirstLevel", 1f);		
+		audioSource.PlayOneShot(DeathSFX);
+		DeathParticle.Play();			
+		Invoke("LoadFirstLevel", levelLoadDelay);		
 	 }
 
 	 private void LoadNextLevel()
@@ -123,18 +126,20 @@ public class Rocket : MonoBehaviour {
 		else
 		{ 
 			audioSource.mute = true; //TODO only mute engine
+			EngineParticle.Stop();
 		}	
 	}
 
 	private void ApplyThrust()
 	{
-		rigidBody.AddRelativeForce(Vector3.up * mainThrust);
+		rigidBody.AddRelativeForce(Vector3.up * mainThrust * Time.deltaTime);
 			audioSource.mute = false;
 
 			if (!audioSource.isPlaying)
 			{
 				audioSource.PlayOneShot(MainEngineSFX);
 			} 
+			EngineParticle.Play();
 	}
 
 }
