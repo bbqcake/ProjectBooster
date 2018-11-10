@@ -1,13 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.SceneManagement;
+using UnityStandardAssets.CrossPlatformInput;
 
 public class Rocket : MonoBehaviour {
 	
 	[SerializeField] float rcsThrust = 125f;
-	[SerializeField] float mainThrust = 100f;
-	[SerializeField] float levelLoadDelay = 2f;	[SerializeField] AudioClip MainEngineSFX;
+	[SerializeField] float mainThrust = 100f;	
+	[SerializeField] AudioClip MainEngineSFX;
 	[SerializeField] AudioClip DeathSFX;
 	[SerializeField] AudioClip SuccessSFX;
 	[SerializeField] ParticleSystem EngineParticle;
@@ -17,8 +17,9 @@ public class Rocket : MonoBehaviour {
 
 	Rigidbody rigidBody;
 	AudioSource audioSource;
-
 	bool debugCollision = false;
+
+	LevelLoader levelLoader; // TODO delete perhaps?	
 
 	enum State { Alive, Dying, Transcending }
 		State state = State.Alive;
@@ -32,7 +33,7 @@ public class Rocket : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update ()
-	{
+	{		
 		// TODO stop sound on death
 		if (state == State.Alive)
 		{
@@ -42,43 +43,35 @@ public class Rocket : MonoBehaviour {
 		if (Debug.isDebugBuild)
 		{
 			RespondToDebugKeys();
-		}
-		
-		
+		}					
 	}
 
-	private void RespontToRotateInput()
-	{
-		rigidBody.freezeRotation = true; //manual rotation of rotation
+	
 
+	private void RespontToRotateInput()
+	{	
+		
 		float roationThisFrame = rcsThrust * Time.deltaTime;
 
-		if (Input.GetKey(KeyCode.A))
+		if (Input.GetKey(KeyCode.A)) // TODO Crossplatform input
 		{			
 			transform.Rotate(Vector3.forward * roationThisFrame);			
 		}		
-		else if (Input.GetKey(KeyCode.D))
+		else if (Input.GetKey(KeyCode.D)) // TODO Crossplatform input
 		{			
 			transform.Rotate(-Vector3.forward * roationThisFrame);			
-		}
+}
 
 		rigidBody.freezeRotation = false; // resume physics control of rotation
 	}	
+	
 
-
-	private void RespondToDebugKeys()
+	private void RotateManually(float rotationThisFrame)
 	{
-		if (Input.GetKeyDown(KeyCode.L))
-		{
-			LoadNextLevel();
-		}
-
-		if (Input.GetKeyDown(KeyCode.C))
-		{	
-			debugCollision = !debugCollision; // this is a simple toggle					
-		}
+		rigidBody.freezeRotation = true; //manual rotation of rotation		
+		transform.Rotate(Vector3.forward * rotationThisFrame);	
+		rigidBody.freezeRotation = false;
 	}
-
 
 	 void OnCollisionEnter(Collision collision)	
 	 {
@@ -97,50 +90,42 @@ public class Rocket : MonoBehaviour {
 
 			case "Finish":
 				
-				StartSuccessSequence();
+				StartCoroutine(StartSuccessSequence());
 				break;
 
 			default:
-				StartDeathSequence();			
+				StartCoroutine(StartDeathSequence());			
 				break;
 
 		 }
 	 }
 
-	 private void StartSuccessSequence()
+	 IEnumerator StartSuccessSequence()
 	 {
 		state = State.Transcending;	
 		audioSource.Stop();
 		audioSource.PlayOneShot(SuccessSFX);
-		SuccessParticle.Play();			
-		Invoke("LoadNextLevel", levelLoadDelay);
+		SuccessParticle.Play();	
+		yield return new WaitForSeconds(2);	
+		FindObjectOfType<LevelLoader>().LoadNextLevel();
+
 	 }
 
-	 private void StartDeathSequence()
+	 IEnumerator StartDeathSequence()
 	 {
 		state = State.Dying;
 		audioSource.Stop();
 		audioSource.PlayOneShot(DeathSFX);
-		DeathParticle.Play();			
-		Invoke("LoadFirstLevel", levelLoadDelay);		
-	 }
-
-	 private void LoadNextLevel()
-	 {
-		 //TODO allow more levels
-		 SceneManager.LoadScene(1);
-	 }
-
-	 private void LoadFirstLevel()
-	 {
-		 SceneManager.LoadScene(0);
-	 }
+		DeathParticle.Play();	
+		yield return new WaitForSeconds(2);	
+		FindObjectOfType<LevelLoader>().LoadFirstLevel();
+	 } 
 
 
 
 	private void RespondToThrustInput()
 	{		
-		if (Input.GetKey(KeyCode.Space))
+		if (CrossPlatformInputManager.GetButton("Jump"))
 		{			
 			ApplyThrust();
 		}
@@ -161,6 +146,19 @@ public class Rocket : MonoBehaviour {
 				audioSource.PlayOneShot(MainEngineSFX);
 			} 
 			EngineParticle.Play();
+	}
+
+	private void RespondToDebugKeys()
+	{
+		if (Input.GetKeyDown(KeyCode.L))
+		{
+			
+		}
+
+		if (Input.GetKeyDown(KeyCode.C))
+		{	
+			debugCollision = !debugCollision; // this is a simple toggle					
+		}
 	}
 
 }
