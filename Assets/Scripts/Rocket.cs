@@ -13,6 +13,13 @@ public class Rocket : MonoBehaviour {
 	[SerializeField] ParticleSystem EngineParticle;
 	[SerializeField] ParticleSystem SuccessParticle;
 	[SerializeField] ParticleSystem DeathParticle;
+	[SerializeField] float rayLength = 0.3f;
+	[SerializeField] GameObject leftLander;
+	[SerializeField] GameObject rightLander;
+
+	bool rightLanderHit = false;
+	bool leftLanderHit = false;
+	
 
 
 	Rigidbody rigidBody;
@@ -36,14 +43,50 @@ public class Rocket : MonoBehaviour {
 	{		
 		// TODO stop sound on death
 		if (state == State.Alive)
-		{
-		RespontToRotateInput();
-		RespondToThrustInput();
-		}
+		{		
+			RespondToThrustInput();	
+			RespontToRotateInput();	
+		}		
+
 		if (Debug.isDebugBuild)
 		{
 			RespondToDebugKeys();
-		}					
+		}	
+		LeftRayCast();
+		RightRayCast();				
+	}	
+
+	void LeftRayCast()
+	{
+		RaycastHit hitLeft;
+
+		
+		Debug.DrawRay(leftLander.transform.position, leftLander.transform.TransformDirection(Vector3.down) * rayLength, Color.cyan, 0.3f);		
+		if (Physics.Raycast(leftLander.transform.position, leftLander.transform.TransformDirection(Vector3.down), out hitLeft, rayLength))
+		{
+			Debug.Log(hitLeft.transform.name);
+			leftLanderHit = true;			
+		}
+		else
+		{
+			leftLanderHit = false;	
+		}		
+	}
+
+	void RightRayCast()
+	{
+		RaycastHit hitRight;
+
+		Debug.DrawRay(rightLander.transform.position, rightLander.transform.TransformDirection(Vector3.down) * rayLength, Color.red, 1f);		
+		if (Physics.Raycast(rightLander.transform.position, rightLander.transform.TransformDirection(Vector3.down), out hitRight, rayLength))
+		{
+        	Debug.Log(hitRight.transform.name);	
+			rightLanderHit = true;		
+		}	
+		else
+		{
+			rightLanderHit = false;	
+		}	
 	}
 
 	
@@ -52,17 +95,23 @@ public class Rocket : MonoBehaviour {
 	{	
 		
 		float roationThisFrame = rcsThrust * Time.deltaTime;
-
+		
+	if (state == State.Alive && leftLanderHit == false && rightLanderHit == false)
+	{
 		if (Input.GetKey(KeyCode.A)) // TODO Crossplatform input
 		{			
 			transform.Rotate(Vector3.forward * roationThisFrame);			
 		}		
-		else if (Input.GetKey(KeyCode.D)) // TODO Crossplatform input
+		if (Input.GetKey(KeyCode.D)) // TODO Crossplatform input
 		{			
-			transform.Rotate(-Vector3.forward * roationThisFrame);			
-}
+			transform.Rotate(-Vector3.forward * roationThisFrame);
+		}
+		
+		rigidBody.freezeRotation = false; // resume physics control of rotation	
+					
+	}
 
-		rigidBody.freezeRotation = false; // resume physics control of rotation
+		
 	}	
 	
 
